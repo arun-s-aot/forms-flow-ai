@@ -31,6 +31,7 @@ from formsflow_api.resources.process import API as PROCESS_API
 from formsflow_api.resources.roles import API as KEYCLOAK_ROLES_API
 from formsflow_api.resources.theme import API as THEME_CUSTOMIZATION_API
 from formsflow_api.resources.user import API as KEYCLOAK_USER_API
+from formsflow_api.resources.storage import API as STORAGE_API
 
 # This will add the Authorize button to the swagger docs
 # oauth2 & openid may not yet be supported by restplus
@@ -63,3 +64,4 @@ API.add_namespace(KEYCLOAK_ROLES_API, path="/roles")
 API.add_namespace(FORM_EMBED_API, path="/embed")
 API.add_namespace(INTEGRATION_API, path="/integrations")
 API.add_namespace(THEME_CUSTOMIZATION_API, path="/themes")
+API.add_namespace(STORAGE_API, path="/storage")
