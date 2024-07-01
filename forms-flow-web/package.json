@@ -12,7 +12,9 @@
     "test": "craco test --detectOpenHandles --silent",
     "coverage": "craco test --coverage --watchAll=false",
     "preinstall": "npm install --package-lock-only --ignore-scripts && npx npm-force-resolutions",
-    "lint": "eslint src --no-fix --max-warnings 0"
+    "lint": "eslint src --no-fix --max-warnings 0",
+    "storybook": "start-storybook -p 6006 -s public",
+    "build-storybook": "build-storybook -s public"
   },
   "jest": {
     "transformIgnorePatterns": [
@@ -31,18 +33,25 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@storybook/addon-actions": "^8.1.11",
+    "@storybook/addon-essentials": "^8.1.11",
+    "@storybook/addon-links": "^8.1.11",
+    "@storybook/node-logger": "^8.1.11",
+    "@storybook/preset-create-react-app": "^8.1.11",
+    "@storybook/react": "^6.3.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^12.1.2",
     "msw": "^0.36.0",
     "redux-mock-store": "^1.5.4"
   },
   "dependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@babel/generator": "7.24.1",
+    "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@bpmn-io/properties-panel": "^0.17.0",
     "@craco/craco": "6.4.5",
     "@material-ui/core": "^4.11.4",
     "@ronchalant/react-loading-overlay": "^1.1.0",
+    "@storybook/addons": "^6.3.0",
     "@wojtekmaj/react-daterange-picker": "^3.1.0",
     "axios": "^1.4.0",
     "bpmn-js": "^7.5.0",
@@ -138,5 +147,17 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "eslintConfig": {
+    "overrides": [
+      {
+        "files": [
+          "**/*.stories.*"
+        ],
+        "rules": {
+          "import/no-anonymous-default-export": "off"
+        }
+      }
+    ]
+  }
 }
