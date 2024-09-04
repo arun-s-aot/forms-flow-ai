@@ -33,13 +33,14 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from formsflow_api import config, models
 from formsflow_api.models import db, ma
 from formsflow_api.resources import API
-
+from flask_cors import CORS
 
 def create_app(
     run_mode=os.getenv("FLASK_ENV", "production")
 ):  # pylint: disable=too-many-statements
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
+    CORS(app)
     app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config.from_object(config.CONFIGURATION[run_mode])
     app.logger.removeHandler(default_handler)

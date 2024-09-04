@@ -9,7 +9,7 @@ import { Formio, Components } from "react-formio";
 import { AppConfig } from "./config";
 import "react-bootstrap-table2-paginator/dist/react-bootstrap-table2-paginator.min.css"; 
 import "./resourceBundles/i18n.js";
-
+import customComponents from "./custom-components/index.js";
 if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === "object") {
     for (let [key, value] of Object.entries(
       window.__REACT_DEVTOOLS_GLOBAL_HOOK__
@@ -27,6 +27,8 @@ if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === "object") {
       Components.setComponents(FormioCustomEx.components);
     }
   );
+  Components.setComponents(customComponents);
+
 const createRootComponent = (props)=>{
     const {publish, subscribe, getKcInstance} = props;
     const store = StoreService.configureStore();

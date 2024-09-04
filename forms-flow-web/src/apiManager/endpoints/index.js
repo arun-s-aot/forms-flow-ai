@@ -79,6 +79,7 @@ const API = {
   GET_FILTERS : `${WEB_BASE_URL}/filter`,
   GET_BPM_TASK_FILTERS : `${BPM_BASE_URL_EXT}/v1/task-filters`,
   VALIDATE_TENANT: `${MT_ADMIN_BASE_URL}/${MT_ADMIN_BASE_URL_VERSION}/tenants/<tenant_id>/validate`,
+  GET_PRESIGNED_URL: `${WEB_BASE_URL}/storage/s3`,
 };
 
 export default API;

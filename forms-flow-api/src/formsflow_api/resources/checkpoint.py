@@ -21,3 +21,28 @@ class HealthCheckpointResource(Resource):
             ({"message": "Welcome to formsflow.ai API"}),
             HTTPStatus.OK,
         )
+
+
+
+@cors_preflight("GET,OPTIONS")
+@API.route("/1", methods=["GET", "OPTIONS"])
+class FormHistoryResource(Resource):
+    """Resource for form history."""
+
+    @staticmethod
+    @profiletime
+    @API.response(
+        400,
+        "BAD_REQUEST:- Invalid request.",
+    )
+    @API.response(
+        401,
+        "UNAUTHORIZED:- Authorization header not provided or an invalid token passed.",
+    )
+    @API.response(
+        403,
+        "FORBIDDEN:- Authorization will not help.",
+    )
+    def get():
+        """Getting form history."""
+        return 'sss'
