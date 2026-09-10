@@ -24,18 +24,22 @@ jobs:
             context: forms-flow-web-root-config
             dockerfile: Dockerfile
             name: forms-flow-web
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
     permissions:
       contents: read
       packages: write
       security-events: write
+      id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
         with:
           install: true
+
       - name: Set version
         if: ${{ github.ref != 'refs/heads/master' }}
         working-directory: .
@@ -54,20 +58,25 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302
         with:
           images: ${{ matrix.image }}
           tags: ${{ env.VERSION }}
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v1
+      - name: Get Docker token
+        id: docker_oidc
+        uses: docker/oidc-action@2500c95e182cadc20f0ead5f96113ee82c736e88
         with:
-          # registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+          connection-id: ${{ secrets.DOCKER_OIDC_CONNECTION_ID }}
+          expires-in: 3600
+      - name: Docker login
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+         username: ${{ secrets.DOCKER_HUB_ORG_USERNAME }}
+         password: ${{ steps.docker_oidc.outputs.token }}
 
       - name: Cache Docker layers
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ matrix.name }}-${{ github.sha }}
@@ -75,7 +84,7 @@ jobs:
             ${{ runner.os }}-buildx-${{ matrix.name }}
       - name: Build and push Docker image
         if: ${{ github.ref != 'refs/heads/master' }}
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
         with:
           context: forms-flow-web-root-config
           platforms: linux/amd64,linux/arm64/v8
@@ -92,7 +101,7 @@ jobs:
             MF_FORMSFLOW_SUBMISSIONS_URL=https://forms-flow-microfrontends.aot-technologies.com/forms-flow-submissions@${{ env.VERSION }}/forms-flow-submissions.gz.js
       - name: Build and push Docker image
         if: ${{ github.ref == 'refs/heads/master' }}
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
         with:
           context: forms-flow-web-root-config
           platforms: linux/amd64,linux/arm64/v8
@@ -108,7 +117,7 @@ jobs:
             MF_FORMSFLOW_REVIEW_URL=https://forms-flow-microfrontends.aot-technologies.com/forms-flow-review@${{ env.VERSION }}/forms-flow-review.gz.js
             MF_FORMSFLOW_SUBMISSIONS_URL=https://forms-flow-microfrontends.aot-technologies.com/forms-flow-submissions@${{ env.VERSION }}/forms-flow-submissions.gz.js
       - name: Scan Docker image 🐳
-        uses: snyk/actions/docker@master
+        uses: snyk/actions/docker@12140f4059e244892ae643824a95459a102120dd
         continue-on-error: true
         with:
           image: ${{ steps.meta.outputs.tags }}
@@ -117,16 +126,15 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Upload Snyk report as sarif 📦
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@ebcb5b36ded6beda4ceefea6a8bc4cc885255bb3 # v3.34.1
         with:
           sarif_file: snyk.sarif
-#####
-      - name: Set up AWS CLI
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c
         with:
-          aws-access-key-id: ${{ secrets.AWS_DEPLOYMENT_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_DEPLOYMENT_SECRET_ACCESS_KEY }}
-          aws-region: ca-central-1  # Change this to your desired region
+          role-to-assume: arn:aws:iam::653405621825:role/githubaction-formsflow-eks-deploy
+          aws-region: ca-central-1
+          role-session-name: github-actions-eks-deploy # Change this to your desired region
       - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -138,3 +146,18 @@ jobs:
         run: |
           kubectl -n ${{ secrets.DEV_OPENSOURCE_NAMESPACE }} patch deployment forms-flow-web -p '{"spec":{"template":{"spec":{"containers":[{"name":"forms-flow-web","image":"docker.io/formsflow/forms-flow-web:${{ env.VERSION }}"}]}}}}'
           kubectl -n ${{ secrets.DEV_OPENSOURCE_NAMESPACE }} rollout restart deployment forms-flow-web
+  notify:
+    needs: build-and-push-image-to-dockerhub
+    if: always()
+    uses: ./.github/workflows/notify-google-chat.yml
+    with:
+      status: ${{ needs.build-and-push-image-to-dockerhub.result }}
+      component: "forms-flow-web"
+      image: "${{ needs.build-and-push-image-to-dockerhub.outputs.image }}"
+      branch: ${{ github.ref_name }}
+      commit: ${{ github.sha }}
+      actor: ${{ github.actor }}
+      workflow: ${{ github.workflow }}
+      run_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    secrets:
+      GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.DOCKER_HUB_DEPLOY_GOOGLE_CHAT_WEBHOOK_URL }}
